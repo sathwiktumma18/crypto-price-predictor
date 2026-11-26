@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CryptoScope — Price Predictor{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #060910;
+            --bg-surface: #0d1117;
+            --bg-card: #161b22;
+            --bg-raised: #1c2128;
+            --border: #30363d;
+            --border-dim: #21262d;
+            --text-1: #e6edf3;
+            --text-2: #8b949e;
+            --text-3: #484f58;
+            --accent: #f7931a;
+            --accent-dim: rgba(247, 147, 26, .12);
+            --accent-glow: rgba(247, 147, 26, .35);
+            --green: #3fb950;
+            --red: #f85149;
+            --blue: #58a6ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-base);
+            color: var(--text-1);
+            font-family: 'Syne', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Ticker Bar ───────────────────────────────────────── */
+        #ticker-bar {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-dim);
+            padding: 6px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #ticker-bar::before,
+        #ticker-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 60px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        #ticker-bar::before {
+            left: 0;
+            background: linear-gradient(to right, var(--bg-surface), transparent);
+        }
+
+        #ticker-bar::after {
+            right: 0;
+            background: linear-gradient(to left, var(--bg-surface), transparent);
+        }
+
+        .ticker-track {
+            display: flex;
+            gap: 0;
+            white-space: nowrap;
+            animation: ticker-scroll 35s linear infinite;
+            width: max-content;
+        }
+
+        .ticker-track:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes ticker-scroll {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 28px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.72rem;
+            border-right: 1px solid var(--border-dim);
+        }
+
+        .ticker-icon {
+            color: var(--accent);
+            font-size: 0.9rem;
+        }
+
+        .ticker-name {
+            color: var(--text-2);
+            font-weight: 700;
+            letter-spacing: .05em;
+        }
+
+        .ticker-price {
+            color: var(--text-1);
+            font-weight: 700;
+        }
+
+        .ticker-change.up {
+            color: var(--green);
+        }
+
+        .ticker-change.down {
+            color: var(--red);
+        }
+
+        /* ── Navbar ───────────────────────────────────────────── */
+        .main-nav {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 0;
+        }
+
+        .nav-brand {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--text-1) !important;
+            text-decoration: none;
+            letter-spacing: -.02em;
+        }
+
+        .nav-brand span {
+            color: var(--accent);
+        }
+
+        .nav-links a {
+            color: var(--text-2);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border-radius: 6px;
+            transition: all .2s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        /* ── Cards ────────────────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: var(--bg-raised);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--text-2);
+        }
+
+        .card-header .icon {
+            color: var(--accent);
+            margin-right: 8px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ── Buttons ──────────────────────────────────────────── */
+        .btn-primary {
+            background: var(--accent);
+            border: none;
+            color: #000;
+            font-weight: 700;
+            font-family: 'Syne', sans-serif;
+            letter-spacing: .04em;
+            border-radius: 8px;
+            padding: 10px 24px;
+            transition: all .2s;
+            box-shadow: 0 0 0 0 var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            background: #ffaa33;
+            color: #000;
+            box-shadow: 0 0 18px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-secondary {
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            background: transparent;
+            border-radius: 8px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            transition: all .2s;
+        }
+
+        .btn-outline-secondary:hover {
+            background: var(--bg-raised);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ── Form Controls ────────────────────────────────────── */
+        .form-control,
+        .form-select {
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            color: var(--text-1);
+            border-radius: 8px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.88rem;
+            padding: 10px 14px;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--bg-raised);
+            color: var(--text-1);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-3);
+        }
+
+        .form-label {
+            color: var(--text-2);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-text {
+            color: var(--text-3);
+            font-size: 0.72rem;
+            margin-top: 4px;
+        }
+
+        /* ── Alerts ───────────────────────────────────────────── */
+        .alert-danger {
+            background: rgba(248, 81, 73, .1);
+            border: 1px solid rgba(248, 81, 73, .3);
+            color: #f85149;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        /* ── Utility ──────────────────────────────────────────── */
+        .mono {
+            font-family: 'Space Mono', monospace;
+        }
+
+        .text-accent {
+            color: var(--accent);
+        }
+
+        .text-green {
+            color: var(--green);
+        }
+
+        .text-red {
+            color: var(--red);
+        }
+
+        .text-muted {
+            color: var(--text-2) !important;
+        }
+
+        .section-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--text-3);
+        }
+
+        .page-enter {
+            animation: fadeUp .45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Table ────────────────────────────────────────────── */
+        .table {
+            color: var(--text-1);
+        }
+
+        .table-striped>tbody>tr:nth-of-type(odd)>* {
+            background: var(--bg-raised);
+            color: var(--text-1);
+        }
+
+        .table-dark th {
+            background: var(--bg-raised);
+            color: var(--text-2);
+            border-color: var(--border);
+            font-size: .72rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .table td,
+        .table th {
+            border-color: var(--border-dim);
+            vertical-align: middle;
+        }
+
+        /* ── Chip / tag ───────────────────────────────────────── */
+        .chip {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: .72rem;
+            font-weight: 700;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .chip-green {
+            background: rgba(63, 185, 80, .15);
+            color: var(--green);
+        }
+
+        .chip-red {
+            background: rgba(248, 81, 73, .15);
+            color: var(--red);
+        }
+
+        img.img-fluid {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Live Ticker Bar ──────────────────────────────────────────────────────── -->
+    <div id="ticker-bar">
+        <div id="ticker-inner">
+            <div class="ticker-track" id="ticker-track">
+                <div class="ticker-item"><span class="ticker-name">Loading prices…</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Navbar ───────────────────────────────────────────────────────────────── -->
+    <nav class="main-nav">
+        <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
+            <a class="nav-brand" href="/">Crypto<span>Scope</span></a>
+            <div class="nav-links d-flex gap-1">
+                <a href="/" class="{{ 'active' if request.endpoint == 'index' else '' }}">Predict</a>
+                <a href="/compare" class="{{ 'active' if request.endpoint == 'compare_page' else '' }}">Compare</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ── Page Content ─────────────────────────────────────────────────────────── -->
+    <div class="container-fluid px-4 mt-4 page-enter">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ── Live Ticker ────────────────────────────────────────────────────────────────
+        async function loadTicker() {
+            try {
+                const res = await fetch('/api/live-prices');
+                const data = await res.json();
+                if (!data.length) return;
+
+                const track = document.getElementById('ticker-track');
+                const items = data.map(c => {
+                    const sign = c.change >= 0 ? '+' : '';
+                    const cls = c.change >= 0 ? 'up' : 'down';
+                    const arrow = c.change >= 0 ? '▲' : '▼';
+                    const inrFmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    return `<div class="ticker-item">
+                <span class="ticker-icon">${c.icon}</span>
+                <span class="ticker-name">${c.name}</span>
+                <span class="ticker-price">₹${inrFmt.format(c.price_inr)}</span>
+                <span class="ticker-change ${cls}">${arrow} ${sign}${c.change.toFixed(2)}%</span>
+            </div>`;
+                }).join('');
+
+                // Duplicate for seamless loop
+                track.innerHTML = items + items;
+            } catch (e) {
+                console.warn('Ticker load failed:', e);
+            }
+        }
+
+        loadTicker();
+        setInterval(loadTicker, 60000); // refresh every 60s
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

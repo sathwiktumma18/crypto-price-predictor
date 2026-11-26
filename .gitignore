@@ -1,0 +1,41 @@
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Byte-compiled / cache files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment files & secrets
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Private keys & credentials
+*.pem
+*.key
+*.pfx
+*.cert
+*token*.json
+*credentials*.json
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}CryptoScope — Predict{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-xl-5 col-lg-7 col-md-9">
+
+        <!-- Hero -->
+        <div class="text-center mb-4" style="padding-top:2rem;">
+            <p class="section-label mb-2">AI-Powered Forecast</p>
+            <h1 style="font-size:2.4rem;font-weight:800;letter-spacing:-.03em;line-height:1.1;">
+                Predict <span class="text-accent">Crypto</span><br>Closing Prices
+            </h1>
+            <p class="mt-2" style="color:var(--text-2);font-size:.9rem;max-width:360px;margin:8px auto 0;">
+                Enter any Yahoo Finance ticker and our LSTM model will forecast future prices based on 10 years of data.
+            </p>
+        </div>
+
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <span class="icon">◎</span> New Prediction
+            </div>
+            <div class="card-body p-4">
+
+                {% if error %}
+                <div class="alert alert-danger mb-3">⚠️ {{ error }}</div>
+                {% endif %}
+
+                <!-- Quick-pick chips -->
+                <div class="mb-3">
+                    <div class="form-label">Quick Select</div>
+                    <div class="d-flex flex-wrap gap-2" id="quick-picks">
+                        {% for c in popular_cryptos %}
+                        <button type="button" class="btn btn-sm quick-chip" data-symbol="{{ c.symbol }}" style="background:var(--bg-raised);border:1px solid var(--border);color:var(--text-2);
+                                   border-radius:20px;font-size:.75rem;font-weight:700;padding:4px 14px;
+                                   font-family:'Space Mono',monospace;transition:all .2s;">
+                            {{ c.icon }} {{ c.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <form method="post" action="/">
+                    <div class="mb-3">
+                        <label for="stock" class="form-label">Ticker Symbol</label>
+                        <input type="text" class="form-control" id="stock" name="stock" placeholder="BTC-USD" required>
+                        <div class="form-text">Yahoo Finance format · e.g. BTC-USD, ETH-USD, AAPL</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="no_of_days" class="form-label">Forecast Horizon</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="range" class="form-range flex-grow-1" id="days-range" min="1" max="100"
+                                value="10" style="accent-color:var(--accent);">
+                            <div class="mono text-accent fw-bold" id="days-display"
+                                style="min-width:52px;text-align:right;font-size:1.1rem;">10d</div>
+                        </div>
+                        <input type="hidden" name="no_of_days" id="no_of_days" value="10">
+                        <div class="form-text">Drag to set 1–100 days</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            🔮 &nbsp;Run Prediction
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Footer note -->
+        <p class="text-center mt-4" style="color:var(--text-3);font-size:.7rem;">
+            Predictions are for informational purposes only and do not constitute financial advice.
+        </p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Quick-pick chip fills input
+    document.querySelectorAll('.quick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('stock').value = btn.dataset.symbol;
+            document.querySelectorAll('.quick-chip').forEach(b => {
+                b.style.borderColor = 'var(--border)';
+                b.style.color = 'var(--text-2)';
+            });
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.color = 'var(--accent)';
+        });
+    });
+
+    // Slider syncs with hidden input
+    const slider = document.getElementById('days-range');
+    const display = document.getElementById('days-display');
+    const hidden = document.getElementById('no_of_days');
+
+    slider.addEventListener('input', () => {
+        display.textContent = slider.value + 'd';
+        hidden.value = slider.value;
+    });
+</script>
+{% endblock %}

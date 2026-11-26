@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}CryptoScope — Compare{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-11">
+
+        <div class="mb-4" style="padding-top:1.5rem;">
+            <p class="section-label mb-1">Performance Comparison</p>
+            <h2 style="font-weight:800;font-size:1.9rem;letter-spacing:-.02em;">
+                Compare <span class="text-accent">Cryptos</span>
+            </h2>
+            <p style="color:var(--text-2);font-size:.88rem;margin-top:4px;">
+                Compare up to 3 assets normalised to % return over the past year.
+            </p>
+        </div>
+
+        <!-- ── Selector Card ───────────────────────────────────────────────── -->
+        <div class="card mb-4">
+            <div class="card-header"><span class="icon">◎</span>Select Assets</div>
+            <div class="card-body p-4">
+
+                <!-- Quick presets -->
+                <div class="mb-3">
+                    <div class="form-label">Presets</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm preset-btn" data-symbols="BTC-USD,ETH-USD,SOL-USD" style="background:var(--bg-raised);border:1px solid var(--border);
+                                   color:var(--text-2);border-radius:20px;font-size:.75rem;
+                                   font-weight:700;padding:4px 14px;font-family:'Space Mono',monospace;">
+                            BTC / ETH / SOL
+                        </button>
+                        <button class="btn btn-sm preset-btn" data-symbols="BTC-USD,ETH-USD,BNB-USD" style="background:var(--bg-raised);border:1px solid var(--border);
+                                   color:var(--text-2);border-radius:20px;font-size:.75rem;
+                                   font-weight:700;padding:4px 14px;font-family:'Space Mono',monospace;">
+                            BTC / ETH / BNB
+                        </button>
+                        <button class="btn btn-sm preset-btn" data-symbols="BTC-USD,XRP-USD,ADA-USD" style="background:var(--bg-raised);border:1px solid var(--border);
+                                   color:var(--text-2);border-radius:20px;font-size:.75rem;
+                                   font-weight:700;padding:4px 14px;font-family:'Space Mono',monospace;">
+                            BTC / XRP / ADA
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Asset 1</label>
+                        <input type="text" class="form-control sym-input" id="sym1" placeholder="BTC-USD"
+                            value="BTC-USD">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Asset 2</label>
+                        <input type="text" class="form-control sym-input" id="sym2" placeholder="ETH-USD"
+                            value="ETH-USD">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Asset 3 <span style="color:var(--text-3);">(optional)</span></label>
+                        <input type="text" class="form-control sym-input" id="sym3" placeholder="SOL-USD"
+                            value="SOL-USD">
+                    </div>
+                </div>
+
+                <button id="compare-btn" class="btn btn-primary px-5">
+                    📊 &nbsp;Compare
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Chart Card ──────────────────────────────────────────────────── -->
+        <div class="card mb-4" id="chart-card" style="display:none!important;">
+            <div class="card-header"><span class="icon">📈</span>1-Year Normalised Return (%)</div>
+            <div class="card-body p-3" style="background:#0d1117;">
+                <canvas id="compare-chart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- ── Stats Row ───────────────────────────────────────────────────── -->
+        <div class="row g-3 mb-5" id="stats-row"></div>
+
+        <!-- ── Loading / Error ────────────────────────────────────────────── -->
+        <div id="compare-loading" class="text-center py-5" style="display:none;">
+            <div class="spinner-border" style="color:var(--accent);" role="status"></div>
+            <p class="mt-3" style="color:var(--text-2);">Fetching market data…</p>
+        </div>
+        <div id="compare-error" class="alert alert-danger" style="display:none;"></div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let compareChart = null;
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const [s1, s2, s3] = btn.dataset.symbols.split(',');
+            document.getElementById('sym1').value = s1 || '';
+            document.getElementById('sym2').value = s2 || '';
+            document.getElementById('sym3').value = s3 || '';
+            document.querySelectorAll('.preset-btn').forEach(b => {
+                b.style.borderColor = 'var(--border)';
+                b.style.color = 'var(--text-2)';
+            });
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.color = 'var(--accent)';
+        });
+    });
+
+    document.getElementById('compare-btn').addEventListener('click', async () => {
+        const syms = ['sym1', 'sym2', 'sym3']
+            .map(id => document.getElementById(id).value.trim().toUpperCase())
+            .filter(Boolean);
+
+        if (syms.length < 2) {
+            document.getElementById('compare-error').style.display = 'block';
+            document.getElementById('compare-error').textContent = 'Please enter at least 2 ticker symbols.';
+            return;
+        }
+
+        document.getElementById('compare-loading').style.display = 'block';
+        document.getElementById('compare-error').style.display = 'none';
+        document.getElementById('chart-card').style.display = 'none';
+        document.getElementById('stats-row').innerHTML = '';
+
+        const url = '/api/compare?' + syms.map(s => `symbols=${encodeURIComponent(s)}`).join('&');
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!data.length) throw new Error('No data returned. Check your ticker symbols.');
+
+            document.getElementById('compare-loading').style.display = 'none';
+            document.getElementById('chart-card').style.removeProperty('display');
+
+            // Build chart
+            const labels = data[0].dates;
+            const datasets = data.map(d => ({
+                label: d.symbol,
+                data: d.values,
+                borderColor: d.color,
+                backgroundColor: d.color + '18',
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.3,
+            }));
+
+            if (compareChart) compareChart.destroy();
+            const ctx = document.getElementById('compare-chart').getContext('2d');
+            compareChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#8b949e',
+                                font: { family: "'Space Mono', monospace", size: 11 },
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#161b22',
+                            borderColor: '#30363d',
+                            borderWidth: 1,
+                            titleColor: '#e6edf3',
+                            bodyColor: '#8b949e',
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y >= 0 ? '+' : ''}${ctx.parsed.y.toFixed(2)}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#484f58',
+                                maxTicksLimit: 8,
+                                font: { family: "'Space Mono', monospace", size: 10 }
+                            },
+                            grid: { color: '#21262d' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#484f58',
+                                font: { family: "'Space Mono', monospace", size: 10 },
+                                callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%'
+                            },
+                            grid: { color: '#21262d' }
+                        }
+                    }
+                }
+            });
+
+            // Stat cards
+            const statsRow = document.getElementById('stats-row');
+            data.forEach(d => {
+                const first = d.values[0];
+                const last = d.values[d.values.length - 1];
+                const max = Math.max(...d.values);
+                const min = Math.min(...d.values);
+                const isPos = last >= 0;
+                const sign = isPos ? '+' : '';
+                statsRow.innerHTML += `
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${d.color};"></span>
+                            <span class="mono fw-bold" style="color:${d.color};font-size:.95rem;">${d.symbol}</span>
+                        </div>
+                        <div class="section-label">1-Year Return</div>
+                        <div class="mono fw-bold" style="font-size:1.5rem;color:${isPos ? 'var(--green)' : 'var(--red)'};">
+                            ${sign}${last.toFixed(2)}%
+                        </div>
+                        <hr style="border-color:var(--border-dim);margin:10px 0;">
+                        <div class="d-flex justify-content-between" style="font-size:.75rem;color:var(--text-2);">
+                            <span>Peak <span class="mono" style="color:var(--green);">+${max.toFixed(1)}%</span></span>
+                            <span>Trough <span class="mono" style="color:var(--red);">${min.toFixed(1)}%</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            });
+
+        } catch (e) {
+            document.getElementById('compare-loading').style.display = 'none';
+            document.getElementById('compare-error').style.display = 'block';
+            document.getElementById('compare-error').textContent = '⚠️ ' + e.message;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}CryptoScope — {{ stock }} Results{% endblock %}
+{% block content %}
+
+{% if error %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center py-5">
+        <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
+        <h3 style="color:var(--red);">Something went wrong</h3>
+        <p style="color:var(--text-2);">{{ error }}</p>
+        <a href="/" class="btn btn-outline-secondary mt-2">← Back to Home</a>
+    </div>
+</div>
+
+{% else %}
+
+<!-- ── Header ───────────────────────────────────────────────────────────────── -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+        <p class="section-label mb-1">Forecast Report</p>
+        <h2 style="font-weight:800;font-size:1.9rem;letter-spacing:-.02em;">
+            <span class="text-accent">{{ stock }}</span>
+            &nbsp;·&nbsp;
+            <span class="mono" style="font-size:1.1rem;color:var(--text-2);">{{ no_of_days }}-Day Outlook</span>
+        </h2>
+    </div>
+    <a href="/" class="btn btn-outline-secondary">← New Prediction</a>
+</div>
+
+<!-- ── Stat Cards ────────────────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="section-label mb-1">Current Price</div>
+                <div class="mono fw-bold" style="font-size:1.5rem;color:var(--text-1);">
+                    ₹{{ "{:,.2f}".format(current_price) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="section-label mb-1">Day {{ no_of_days }} Forecast</div>
+                <div class="mono fw-bold" style="font-size:1.5rem;color:var(--text-1);">
+                    ₹{{ "{:,.2f}".format(pred_last) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="section-label mb-1">Expected Change</div>
+                <div class="mono fw-bold" style="font-size:1.5rem;">
+                    {% if pred_change >= 0 %}
+                    <span class="text-green">▲ +{{ "{:.2f}".format(pred_change) }}%</span>
+                    {% else %}
+                    <span class="text-red">▼ {{ "{:.2f}".format(pred_change) }}%</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Plot 1 ────────────────────────────────────────────────────────────────── -->
+<div class="card mb-4">
+    <div class="card-header"><span class="icon">📈</span>Historical Closing Prices &nbsp;<span
+            style="color:var(--text-3);font-size:.7rem;">(1 USD = ₹{{ inr_rate }})</span></div>
+    <div class="card-body text-center p-2">
+        <img src="{{ original_plot }}" class="img-fluid w-100">
+    </div>
+</div>
+
+<!-- ── Plot 2 ────────────────────────────────────────────────────────────────── -->
+<div class="card mb-4">
+    <div class="card-header"><span class="icon">🔵</span>Actual vs Predicted (Test Set)</div>
+    <div class="card-body text-center p-2">
+        <img src="{{ predicted_plot }}" class="img-fluid w-100">
+    </div>
+</div>
+
+<!-- ── Plot 3 ────────────────────────────────────────────────────────────────── -->
+<div class="card mb-4">
+    <div class="card-header"><span class="icon">🔮</span>{{ no_of_days }}-Day Price Forecast</div>
+    <div class="card-body text-center p-2">
+        <img src="{{ future_plot }}" class="img-fluid w-100">
+    </div>
+</div>
+
+<!-- ── Table ─────────────────────────────────────────────────────────────────── -->
+<div class="card mb-5">
+    <div class="card-header"><span class="icon">📋</span>Predicted Prices — Day by Day</div>
+    <div class="card-body p-0">
+        <div style="max-height:380px;overflow-y:auto;">
+            <table class="table table-striped mb-0 text-center">
+                <thead class="table-dark" style="position:sticky;top:0;z-index:1;">
+                    <tr>
+                        <th>Day</th>
+                        <th>Predicted Close (USD)</th>
+                        <th>vs Current</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for price in future_predictions %}
+                    {% set diff = price - current_price %}
+                    {% set diff_pct = (diff / current_price) * 100 %}
+                    <tr>
+                        <td class="mono text-muted">{{ loop.index }}</td>
+                        <td class="mono fw-bold">₹{{ "{:,.2f}".format(price) }}</td>
+                        <td>
+                            {% if diff >= 0 %}
+                            <span class="chip chip-green">+{{ "{:.2f}".format(diff_pct) }}%</span>
+                            {% else %}
+                            <span class="chip chip-red">{{ "{:.2f}".format(diff_pct) }}%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mb-5 d-flex justify-content-center gap-3 flex-wrap">
+    <a href="/" class="btn btn-primary btn-lg">🔮 Predict Another</a>
+    <a href="/compare" class="btn btn-outline-secondary btn-lg">📊 Compare Cryptos</a>
+</div>
+
+{% endif %}
+{% endblock %}
